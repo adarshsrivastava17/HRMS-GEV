@@ -42,7 +42,6 @@ router.get('/stats', verifyToken, async (req, res) => {
                 }),
                 req.prisma.leaveRequest.count({ where: { status: 'pending' } }),
                 req.prisma.payroll.aggregate({
-                    where: { status: 'paid' },
                     _sum: { netSalary: true }
                 })
             ]);

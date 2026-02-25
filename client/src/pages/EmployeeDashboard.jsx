@@ -668,10 +668,10 @@ function MyPayslips() {
                         {payslips.map((pay) => (
                             <tr key={pay.id}>
                                 <td>{pay.month}</td>
-                                <td>${pay.basicSalary.toLocaleString()}</td>
-                                <td className="text-success">+${pay.bonus.toLocaleString()}</td>
-                                <td className="text-danger">-${pay.deductions.toLocaleString()}</td>
-                                <td><strong>${pay.netSalary.toLocaleString()}</strong></td>
+                                <td>₹{pay.basicSalary.toLocaleString()}</td>
+                                <td className="text-success">+₹{pay.bonus.toLocaleString()}</td>
+                                <td className="text-danger">-₹{pay.deductions.toLocaleString()}</td>
+                                <td><strong>₹{pay.netSalary.toLocaleString()}</strong></td>
                                 <td><span className={`badge badge-${pay.status === 'paid' ? 'success' : pay.status === 'processed' ? 'info' : 'pending'}`}>{pay.status}</span></td>
                             </tr>
                         ))}

@@ -221,7 +221,7 @@ function DashboardHome() {
             {/* Dynamic Modals */}
             {activeModal && (
                 <div className="modal-overlay" onClick={closeModal}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 700, maxHeight: '80vh', overflow: 'auto' }}>
+                    <div className="modal-content glass-card" onClick={e => e.stopPropagation()} style={{ maxWidth: 700, maxHeight: '80vh', overflow: 'auto' }}>
                         <div className="modal-header">
                             <h3 className="modal-title">
                                 {activeModal === 'employees' && '👥 All Employees'}
@@ -235,12 +235,12 @@ function DashboardHome() {
                             <button className="modal-close" onClick={closeModal}>×</button>
                         </div>
 
-                        {modalLoading ? (
-                            <div className="text-center p-3"><div className="spinner"></div></div>
-                        ) : modalData.length === 0 ? (
+                        {modalData.length === 0 ? (
                             <div className="text-center p-3" style={{ color: 'var(--text-muted)' }}>
-                                <div style={{ fontSize: 48, marginBottom: 16 }}>📭</div>
-                                <p>No data available</p>
+                                <div style={{ fontSize: 48, marginBottom: 16 }}>
+                                    {activeModal === 'working' ? '🟢' : activeModal === 'onBreak' ? '☕' : '🏠'}
+                                </div>
+                                <p>{activeModal === 'working' ? 'No one is currently working' : activeModal === 'onBreak' ? 'No one is on break right now' : 'No one has checked out yet'}</p>
                             </div>
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -542,7 +542,7 @@ function EmployeesPage() {
                                     </td>
                                     <td>{emp.position || '-'}</td>
                                     <td>{emp.department?.name || '-'}</td>
-                                    <td>${emp.salary?.toLocaleString() || '-'}</td>
+                                    <td>₹{emp.salary?.toLocaleString() || '-'}</td>
                                     <td>
                                         <div className="d-flex gap-1">
                                             <button className="btn btn-sm btn-ghost" onClick={() => handleEdit(emp)}>✏️</button>
@@ -641,8 +641,12 @@ function DepartmentsPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        try { await departmentAPI.create(form); setShowForm(false); setForm({ name: '', description: '' }); fetchDepartments(); }
-        catch (error) { alert(error.response?.data?.error || 'Failed'); }
+        try {
+            await departmentAPI.create(form);
+            setShowForm(false);
+            setForm({ name: '', description: '' });
+            fetchDepartments();
+        } catch (error) { alert(error.response?.data?.error || 'Failed to create department'); }
     };
 
     const handleDelete = async (id) => {
@@ -656,36 +660,92 @@ function DepartmentsPage() {
 
     return (
         <div className="animate-fade-in">
-            <div className="page-header d-flex justify-between align-center">
-                <div><h1 className="page-title">Departments 🏢</h1><p className="page-subtitle">Manage company departments</p></div>
-                <button className="btn btn-primary" onClick={() => setShowForm(true)}>+ Add Department</button>
-            </div>
+            {showForm ? (
+                /* ── Add Department Form (Full Page) ── */
+                <div className="animate-fade-in">
+                    <div className="d-flex justify-between align-center mb-3" style={{ flexWrap: 'wrap', gap: 12 }}>
+                        <h2 style={{ margin: 0 }}>🏢 Add New Department</h2>
+                        <button
+                            className="btn btn-ghost"
+                            onClick={() => setShowForm(false)}
+                            style={{ fontSize: 18 }}
+                        >
+                            ← Back to Departments
+                        </button>
+                    </div>
 
-            {showForm && (
-                <div className="modal-overlay" onClick={() => setShowForm(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header"><h3 className="modal-title">Add Department</h3><button className="modal-close" onClick={() => setShowForm(false)}>×</button></div>
+                    <div className="glass-card p-3">
                         <form onSubmit={handleSubmit}>
-                            <div className="input-group"><label className="input-label">Name</label><input className="input-field" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required /></div>
-                            <div className="input-group"><label className="input-label">Description</label><textarea className="input-field" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
-                            <button type="submit" className="btn btn-primary w-full">Create</button>
+                            <div className="input-group">
+                                <label className="input-label">Department Name *</label>
+                                <input
+                                    className="input-field"
+                                    placeholder="e.g. Engineering, Marketing, Human Resources"
+                                    value={form.name}
+                                    onChange={e => setForm({ ...form, name: e.target.value })}
+                                    required
+                                />
+                            </div>
+
+                            <div className="input-group">
+                                <label className="input-label">Description</label>
+                                <textarea
+                                    className="input-field"
+                                    rows="4"
+                                    placeholder="Describe the department's role and responsibilities..."
+                                    value={form.description}
+                                    onChange={e => setForm({ ...form, description: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="d-flex gap-2" style={{ marginTop: 24 }}>
+                                <button type="submit" className="btn btn-primary" style={{ flex: 1, padding: '14px' }}>
+                                    ✅ Create Department
+                                </button>
+                                <button type="button" className="btn btn-ghost" onClick={() => setShowForm(false)} style={{ padding: '14px 24px' }}>
+                                    Cancel
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
-            )}
-
-            <div className="grid grid-3">
-                {departments.map(dept => (
-                    <div key={dept.id} className="glass-card p-2 card-3d">
-                        <h3 className="mb-1">{dept.name}</h3>
-                        <p className="text-muted mb-1">{dept.description || 'No description'}</p>
-                        <div className="d-flex justify-between align-center">
-                            <span className="badge badge-info">{dept._count?.users || 0} members</span>
-                            <button className="btn btn-sm btn-danger" onClick={() => handleDelete(dept.id)}>🗑️</button>
+            ) : (
+                /* ── Departments List View ── */
+                <>
+                    <div className="page-header" style={{ marginBottom: 20 }}>
+                        <div className="d-flex justify-between align-center" style={{ flexWrap: 'wrap', gap: 12 }}>
+                            <div>
+                                <h1 className="page-title">Departments 🏢</h1>
+                                <p className="page-subtitle">Manage company departments ({departments.length} total)</p>
+                            </div>
+                            <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+                                + Add Department
+                            </button>
                         </div>
                     </div>
-                ))}
-            </div>
+
+                    {departments.length === 0 ? (
+                        <div className="glass-card p-3 text-center" style={{ color: 'var(--text-muted)' }}>
+                            <div style={{ fontSize: 48, marginBottom: 16 }}>🏢</div>
+                            <h3>No Departments Yet</h3>
+                            <p>Create your first department to organize your team!</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-3">
+                            {departments.map(dept => (
+                                <div key={dept.id} className="glass-card p-2 card-3d">
+                                    <h3 className="mb-1">{dept.name}</h3>
+                                    <p className="text-muted mb-1">{dept.description || 'No description'}</p>
+                                    <div className="d-flex justify-between align-center">
+                                        <span className="badge badge-info">👥 {dept._count?.users || 0} members</span>
+                                        <button className="btn btn-sm btn-danger" onClick={() => handleDelete(dept.id)}>🗑️</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </>
+            )}
         </div>
     );
 }
@@ -876,7 +936,7 @@ function PayrollPage() {
 
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
                                 <div className="input-group">
-                                    <label className="input-label">Basic Salary ($) *</label>
+                                    <label className="input-label">Basic Salary (₹) *</label>
                                     <input
                                         type="number"
                                         className="input-field"
@@ -887,7 +947,7 @@ function PayrollPage() {
                                     />
                                 </div>
                                 <div className="input-group">
-                                    <label className="input-label">Bonus ($)</label>
+                                    <label className="input-label">Bonus (₹)</label>
                                     <input
                                         type="number"
                                         className="input-field"
@@ -897,7 +957,7 @@ function PayrollPage() {
                                     />
                                 </div>
                                 <div className="input-group">
-                                    <label className="input-label">Deductions ($)</label>
+                                    <label className="input-label">Deductions (₹)</label>
                                     <input
                                         type="number"
                                         className="input-field"
@@ -941,10 +1001,10 @@ function PayrollPage() {
                                     <tr key={p.id}>
                                         <td>{p.user?.name}</td>
                                         <td>{p.month}</td>
-                                        <td>${p.basicSalary.toLocaleString()}</td>
-                                        <td className="text-success">+${p.bonus.toLocaleString()}</td>
-                                        <td className="text-danger">-${p.deductions.toLocaleString()}</td>
-                                        <td><strong>${p.netSalary.toLocaleString()}</strong></td>
+                                        <td>₹{p.basicSalary.toLocaleString()}</td>
+                                        <td className="text-success">+₹{p.bonus.toLocaleString()}</td>
+                                        <td className="text-danger">-₹{p.deductions.toLocaleString()}</td>
+                                        <td><strong>₹{p.netSalary.toLocaleString()}</strong></td>
                                         <td>
                                             <span className={`badge badge-${p.status === 'paid' ? 'success' : p.status === 'processed' ? 'info' : 'pending'}`}>
                                                 {p.status}
@@ -985,14 +1045,18 @@ function AnnouncementsPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        try { await announcementAPI.create(form); setShowForm(false); setForm({ title: '', content: '', priority: 'normal' }); fetchAnnouncements(); }
-        catch (error) { alert('Failed'); }
+        try {
+            await announcementAPI.create(form);
+            setShowForm(false);
+            setForm({ title: '', content: '', priority: 'normal' });
+            fetchAnnouncements();
+        } catch (error) { alert('Failed to create announcement'); }
     };
 
     const handleDelete = async (id) => {
         if (confirm('Delete announcement?')) {
             try { await announcementAPI.delete(id); fetchAnnouncements(); }
-            catch (error) { alert('Failed'); }
+            catch (error) { alert('Failed to delete'); }
         }
     };
 
@@ -1000,38 +1064,113 @@ function AnnouncementsPage() {
 
     return (
         <div className="animate-fade-in">
-            <div className="page-header d-flex justify-between align-center">
-                <div><h1 className="page-title">Announcements 📢</h1><p className="page-subtitle">Create and manage announcements</p></div>
-                <button className="btn btn-primary" onClick={() => setShowForm(true)}>+ New Announcement</button>
-            </div>
+            {showForm ? (
+                /* ── Create Announcement Form (Full Page) ── */
+                <div className="animate-fade-in">
+                    <div className="d-flex justify-between align-center mb-3" style={{ flexWrap: 'wrap', gap: 12 }}>
+                        <h2 style={{ margin: 0 }}>📢 New Announcement</h2>
+                        <button
+                            className="btn btn-ghost"
+                            onClick={() => setShowForm(false)}
+                            style={{ fontSize: 18 }}
+                        >
+                            ← Back to Announcements
+                        </button>
+                    </div>
 
-            {showForm && (
-                <div className="modal-overlay" onClick={() => setShowForm(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header"><h3 className="modal-title">New Announcement</h3><button className="modal-close" onClick={() => setShowForm(false)}>×</button></div>
+                    <div className="glass-card p-3">
                         <form onSubmit={handleSubmit}>
-                            <div className="input-group"><label className="input-label">Title</label><input className="input-field" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required /></div>
-                            <div className="input-group"><label className="input-label">Content</label><textarea className="input-field" rows="4" value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} required /></div>
-                            <div className="input-group"><label className="input-label">Priority</label><select className="input-field select-field" value={form.priority} onChange={e => setForm({ ...form, priority: e.target.value })}><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option></select></div>
-                            <button type="submit" className="btn btn-primary w-full">Post</button>
+                            <div className="input-group">
+                                <label className="input-label">Announcement Title *</label>
+                                <input
+                                    className="input-field"
+                                    placeholder="e.g. Company Holiday Notice"
+                                    value={form.title}
+                                    onChange={e => setForm({ ...form, title: e.target.value })}
+                                    required
+                                />
+                            </div>
+
+                            <div className="input-group">
+                                <label className="input-label">Content *</label>
+                                <textarea
+                                    className="input-field"
+                                    rows="6"
+                                    placeholder="Write the announcement details here..."
+                                    value={form.content}
+                                    onChange={e => setForm({ ...form, content: e.target.value })}
+                                    required
+                                />
+                            </div>
+
+                            <div className="input-group">
+                                <label className="input-label">Priority Level</label>
+                                <select
+                                    className="input-field select-field"
+                                    value={form.priority}
+                                    onChange={e => setForm({ ...form, priority: e.target.value })}
+                                >
+                                    <option value="low">🟢 Low</option>
+                                    <option value="normal">🔵 Normal</option>
+                                    <option value="high">🟠 High</option>
+                                    <option value="urgent">🔴 Urgent</option>
+                                </select>
+                            </div>
+
+                            <div className="d-flex gap-2" style={{ marginTop: 24 }}>
+                                <button type="submit" className="btn btn-primary" style={{ flex: 1, padding: '14px' }}>
+                                    🚀 Post Announcement
+                                </button>
+                                <button type="button" className="btn btn-ghost" onClick={() => setShowForm(false)} style={{ padding: '14px 24px' }}>
+                                    Cancel
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
-            )}
-
-            {announcements.map(ann => (
-                <div key={ann.id} className="glass-card p-2 mb-2">
-                    <div className="d-flex justify-between align-center mb-1">
-                        <h3>{ann.title}</h3>
-                        <div className="d-flex gap-1 align-center">
-                            <span className={`badge badge-${ann.priority === 'urgent' || ann.priority === 'high' ? 'danger' : ann.priority === 'normal' ? 'info' : 'pending'}`}>{ann.priority}</span>
-                            <button className="btn btn-sm btn-danger" onClick={() => handleDelete(ann.id)}>🗑️</button>
+            ) : (
+                /* ── Announcements List View ── */
+                <>
+                    <div className="page-header" style={{ marginBottom: 20 }}>
+                        <div className="d-flex justify-between align-center" style={{ flexWrap: 'wrap', gap: 12 }}>
+                            <div>
+                                <h1 className="page-title">Announcements 📢</h1>
+                                <p className="page-subtitle">Create and manage company announcements ({announcements.length} total)</p>
+                            </div>
+                            <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+                                + New Announcement
+                            </button>
                         </div>
                     </div>
-                    <p className="text-muted">{ann.content}</p>
-                    <p className="text-muted mt-1" style={{ fontSize: 12 }}>{new Date(ann.createdAt).toLocaleDateString()}</p>
-                </div>
-            ))}
+
+                    {announcements.length === 0 ? (
+                        <div className="glass-card p-3 text-center" style={{ color: 'var(--text-muted)' }}>
+                            <div style={{ fontSize: 48, marginBottom: 16 }}>📢</div>
+                            <h3>No Announcements Yet</h3>
+                            <p>Create your first announcement to keep everyone informed!</p>
+                        </div>
+                    ) : (
+                        announcements.map(ann => (
+                            <div key={ann.id} className="glass-card p-3 mb-2">
+                                <div className="d-flex justify-between align-center mb-1" style={{ flexWrap: 'wrap', gap: 8 }}>
+                                    <h3 style={{ margin: 0 }}>{ann.title}</h3>
+                                    <div className="d-flex gap-1 align-center">
+                                        <span className={`badge badge-${ann.priority === 'urgent' || ann.priority === 'high' ? 'danger' : ann.priority === 'normal' ? 'info' : 'pending'}`}>
+                                            {ann.priority === 'urgent' ? '🔴' : ann.priority === 'high' ? '🟠' : ann.priority === 'normal' ? '🔵' : '🟢'} {ann.priority}
+                                        </span>
+                                        <button className="btn btn-sm btn-danger" onClick={() => handleDelete(ann.id)}>🗑️</button>
+                                    </div>
+                                </div>
+                                <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 12 }}>{ann.content}</p>
+                                <div className="d-flex gap-2" style={{ fontSize: 12, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+                                    <span>👤 {ann.author?.name || 'Admin'}</span>
+                                    <span>📅 {new Date(ann.createdAt).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </>
+            )}
         </div>
     );
 }

@@ -287,7 +287,7 @@ function DashboardHome() {
                     onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0) scale(1)'}
                 >
                     <div className="stat-icon" style={{ background: 'var(--info-gradient)' }}>💰</div>
-                    <div className="stat-value gradient-text">${(stats?.totalPayroll / 1000 || 0).toFixed(0)}K</div>
+                    <div className="stat-value gradient-text">₹{(stats?.totalPayroll || 0).toLocaleString()}</div>
                     <div className="stat-label">Total Payroll</div>
                     <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>Click to view details</div>
                 </div>
@@ -580,7 +580,7 @@ function DashboardHome() {
                                                 </td>
                                                 <td>{emp.position || '-'}</td>
                                                 <td>{emp.department?.name || '-'}</td>
-                                                <td>${emp.salary?.toLocaleString() || '-'}</td>
+                                                <td>₹{emp.salary?.toLocaleString() || '-'}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -698,15 +698,15 @@ function DashboardHome() {
                             <>
                                 <div className="grid grid-3 mb-2" style={{ gap: 12 }}>
                                     <div className="text-center p-2" style={{ background: 'rgba(102, 126, 234, 0.1)', borderRadius: 'var(--radius-md)' }}>
-                                        <div style={{ fontSize: 20, fontWeight: 700 }}>${payrolls.reduce((s, p) => s + (p.netSalary || 0), 0).toLocaleString()}</div>
+                                        <div style={{ fontSize: 20, fontWeight: 700 }}>₹{payrolls.reduce((s, p) => s + (p.netSalary || 0), 0).toLocaleString()}</div>
                                         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Total</div>
                                     </div>
                                     <div className="text-center p-2" style={{ background: 'rgba(56, 239, 125, 0.1)', borderRadius: 'var(--radius-md)' }}>
-                                        <div style={{ fontSize: 20, fontWeight: 700, color: '#38ef7d' }}>${payrolls.filter(p => p.status === 'paid').reduce((s, p) => s + (p.netSalary || 0), 0).toLocaleString()}</div>
+                                        <div style={{ fontSize: 20, fontWeight: 700, color: '#38ef7d' }}>₹{payrolls.filter(p => p.status === 'paid').reduce((s, p) => s + (p.netSalary || 0), 0).toLocaleString()}</div>
                                         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Paid</div>
                                     </div>
                                     <div className="text-center p-2" style={{ background: 'rgba(249, 115, 22, 0.1)', borderRadius: 'var(--radius-md)' }}>
-                                        <div style={{ fontSize: 20, fontWeight: 700, color: '#f97316' }}>${payrolls.filter(p => p.status !== 'paid').reduce((s, p) => s + (p.netSalary || 0), 0).toLocaleString()}</div>
+                                        <div style={{ fontSize: 20, fontWeight: 700, color: '#f97316' }}>₹{payrolls.filter(p => p.status !== 'paid').reduce((s, p) => s + (p.netSalary || 0), 0).toLocaleString()}</div>
                                         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Pending</div>
                                     </div>
                                 </div>
@@ -727,9 +727,9 @@ function DashboardHome() {
                                                 <tr key={pay.id}>
                                                     <td><strong>{pay.user?.name || 'Unknown'}</strong></td>
                                                     <td>{pay.month}</td>
-                                                    <td>${pay.basicSalary?.toLocaleString() || 0}</td>
-                                                    <td>${pay.bonus?.toLocaleString() || 0}</td>
-                                                    <td><strong>${pay.netSalary?.toLocaleString() || 0}</strong></td>
+                                                    <td>₹{pay.basicSalary?.toLocaleString() || 0}</td>
+                                                    <td>₹{pay.bonus?.toLocaleString() || 0}</td>
+                                                    <td><strong>₹{pay.netSalary?.toLocaleString() || 0}</strong></td>
                                                     <td>
                                                         <span className={`badge badge-${pay.status === 'paid' ? 'success' : 'pending'}`}>
                                                             {pay.status}
@@ -1091,15 +1091,15 @@ function PayrollPage() {
             <div className="page-header"><h1 className="page-title">Payroll Overview 💰</h1></div>
 
             <div className="grid grid-3 mb-3">
-                <div className="glass-card stat-card"><div className="stat-value gradient-text">${summary.total.toLocaleString()}</div><div className="stat-label">Total Payroll</div></div>
-                <div className="glass-card stat-card"><div className="stat-value" style={{ color: '#38ef7d' }}>${summary.paid.toLocaleString()}</div><div className="stat-label">Paid</div></div>
-                <div className="glass-card stat-card"><div className="stat-value" style={{ color: '#f97316' }}>${summary.pending.toLocaleString()}</div><div className="stat-label">Pending</div></div>
+                <div className="glass-card stat-card"><div className="stat-value gradient-text">₹{summary.total.toLocaleString()}</div><div className="stat-label">Total Payroll</div></div>
+                <div className="glass-card stat-card"><div className="stat-value" style={{ color: '#38ef7d' }}>₹{summary.paid.toLocaleString()}</div><div className="stat-label">Paid</div></div>
+                <div className="glass-card stat-card"><div className="stat-value" style={{ color: '#f97316' }}>₹{summary.pending.toLocaleString()}</div><div className="stat-label">Pending</div></div>
             </div>
 
             <div className="glass-card p-2">
                 <table className="data-table"><thead><tr><th>Employee</th><th>Month</th><th>Basic</th><th>Bonus</th><th>Net</th><th>Status</th></tr></thead>
                     <tbody>{payrolls.slice(0, 10).map(p => (
-                        <tr key={p.id}><td>{p.user?.name}</td><td>{p.month}</td><td>${p.basicSalary.toLocaleString()}</td><td>${p.bonus.toLocaleString()}</td><td><strong>${p.netSalary.toLocaleString()}</strong></td><td><span className={`badge badge-${p.status === 'paid' ? 'success' : 'pending'}`}>{p.status}</span></td></tr>
+                        <tr key={p.id}><td>{p.user?.name}</td><td>{p.month}</td><td>₹{p.basicSalary.toLocaleString()}</td><td>₹{p.bonus.toLocaleString()}</td><td><strong>₹{p.netSalary.toLocaleString()}</strong></td><td><span className={`badge badge-${p.status === 'paid' ? 'success' : 'pending'}`}>{p.status}</span></td></tr>
                     ))}</tbody>
                 </table>
             </div>
