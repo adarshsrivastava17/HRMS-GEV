@@ -1,13 +1,13 @@
-// Prisma Schema for GEV System
-// Using SQLite for local development - use PostgreSQL for production
+// Prisma Schema for GEV HRMS System
+// Using PostgreSQL for production deployment
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./hrms.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // User Model - Supports all 4 roles

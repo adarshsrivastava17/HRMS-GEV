@@ -1,9 +1,8 @@
 // Hiring Routes - Job Postings Management
-// Using raw SQL queries for compatibility until Prisma client is regenerated
+// Using Prisma ORM for PostgreSQL compatibility
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { verifyToken, requireRole } from '../middleware/auth.js';
-import crypto from 'crypto';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -12,13 +11,12 @@ const prisma = new PrismaClient();
 router.get('/', verifyToken, async (req, res) => {
     try {
         const { status } = req.query;
-        let hirings;
+        const where = status ? { status } : {};
 
-        if (status) {
-            hirings = await prisma.$queryRaw`SELECT * FROM Hiring WHERE status = ${status} ORDER BY createdAt DESC`;
-        } else {
-            hirings = await prisma.$queryRaw`SELECT * FROM Hiring ORDER BY createdAt DESC`;
-        }
+        const hirings = await prisma.hiring.findMany({
+            where,
+            orderBy: { createdAt: 'desc' }
+        });
 
         res.json(hirings);
     } catch (error) {
@@ -30,13 +28,15 @@ router.get('/', verifyToken, async (req, res) => {
 // Get single hiring post
 router.get('/:id', verifyToken, async (req, res) => {
     try {
-        const hirings = await prisma.$queryRaw`SELECT * FROM Hiring WHERE id = ${req.params.id}`;
+        const hiring = await prisma.hiring.findUnique({
+            where: { id: req.params.id }
+        });
 
-        if (hirings.length === 0) {
+        if (!hiring) {
             return res.status(404).json({ error: 'Hiring post not found' });
         }
 
-        res.json(hirings[0]);
+        res.json(hiring);
     } catch (error) {
         console.error('Error fetching hiring:', error);
         res.status(500).json({ error: 'Failed to fetch hiring post' });
@@ -52,18 +52,21 @@ router.post('/', verifyToken, requireRole('hr', 'admin'), async (req, res) => {
             return res.status(400).json({ error: 'All required fields must be filled' });
         }
 
-        const id = crypto.randomUUID();
-        const now = new Date().toISOString();
-        const userId = req.user.id;
-        const salary = salaryRange || null;
+        const hiring = await prisma.hiring.create({
+            data: {
+                title,
+                department,
+                location,
+                type,
+                salaryRange: salaryRange || null,
+                description,
+                requirements,
+                status: 'open',
+                createdById: req.user.id
+            }
+        });
 
-        await prisma.$executeRaw`
-            INSERT INTO Hiring (id, title, department, location, type, salaryRange, description, requirements, status, createdById, createdAt, updatedAt)
-            VALUES (${id}, ${title}, ${department}, ${location}, ${type}, ${salary}, ${description}, ${requirements}, 'open', ${userId}, ${now}, ${now})
-        `;
-
-        const newHiring = await prisma.$queryRaw`SELECT * FROM Hiring WHERE id = ${id}`;
-        res.status(201).json(newHiring[0]);
+        res.status(201).json(hiring);
     } catch (error) {
         console.error('Error creating hiring:', error);
         res.status(500).json({ error: 'Failed to create hiring post: ' + error.message });
@@ -74,18 +77,22 @@ router.post('/', verifyToken, requireRole('hr', 'admin'), async (req, res) => {
 router.put('/:id', verifyToken, requireRole('hr', 'admin'), async (req, res) => {
     try {
         const { title, department, location, type, salaryRange, description, requirements, status } = req.body;
-        const now = new Date().toISOString();
 
-        await prisma.$executeRaw`
-            UPDATE Hiring 
-            SET title = ${title}, department = ${department}, location = ${location}, 
-                type = ${type}, salaryRange = ${salaryRange}, description = ${description}, 
-                requirements = ${requirements}, status = ${status}, updatedAt = ${now}
-            WHERE id = ${req.params.id}
-        `;
+        const hiring = await prisma.hiring.update({
+            where: { id: req.params.id },
+            data: {
+                title,
+                department,
+                location,
+                type,
+                salaryRange,
+                description,
+                requirements,
+                status
+            }
+        });
 
-        const updated = await prisma.$queryRaw`SELECT * FROM Hiring WHERE id = ${req.params.id}`;
-        res.json(updated[0]);
+        res.json(hiring);
     } catch (error) {
         console.error('Error updating hiring:', error);
         res.status(500).json({ error: 'Failed to update hiring post' });
@@ -95,7 +102,9 @@ router.put('/:id', verifyToken, requireRole('hr', 'admin'), async (req, res) => 
 // Delete hiring post (HR and Admin only)
 router.delete('/:id', verifyToken, requireRole('hr', 'admin'), async (req, res) => {
     try {
-        await prisma.$executeRaw`DELETE FROM Hiring WHERE id = ${req.params.id}`;
+        await prisma.hiring.delete({
+            where: { id: req.params.id }
+        });
         res.json({ message: 'Hiring post deleted' });
     } catch (error) {
         console.error('Error deleting hiring:', error);
